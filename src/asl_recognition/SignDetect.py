@@ -86,6 +86,24 @@ def Train():
             predicted_action = torch.argmax(yHat, axis = 1)
             print(predicted_action)
     
+    torch.save(model,"bs_model.pth")
+    return test_loader
+
+def Evaluate(test_loader):
+    model = torch.load("bs_model.pth", weights_only = False)
+    model.eval()
+
+    with torch.no_grad():
+        X,y = next(iter(test_loader))
+        yHat = model(X)
+
+        predicted = torch.argmax(yHat, dim = 1)
+        actual = torch.argmax(y, dim = 1)
+
+        acc = (predicted == actual).float().mean()
+        print(acc.item())
+
 
 if __name__ == "__main__":
-    Train()
+    t_loader = Train()
+    Evaluate(t_loader)
