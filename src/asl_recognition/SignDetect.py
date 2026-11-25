@@ -12,7 +12,18 @@ from datetime import datetime
 import random
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 
+class LSTM(nn.Module):
+    def __init__(self, input_size, hidden_size, return_sequences = True):
+        super().__init__()
+        self.lstm=nn.LSTM(input_size, hidden_size, batch_first = True)
+        self.return_sequences = return_sequences
+
+    def forward(self, x):
+        x, _ = self.lstm(x)
+        return x if self.return_sequences else x[:, -1, :]
 
 def Train():
     print('Training---------')
@@ -32,10 +43,49 @@ def Train():
                 window.append(res)
             sequences.append(window)
             labels.append(label_map[action])
-    X = np.array(sequences)
-    y = F.one_hot(torch.tensor(labels), num_classes = 13)
-    print(y)
+    X = torch.tensor(np.array(sequences))
+    y = F.one_hot(torch.tensor(labels), num_classes = 13).float()
+    # print(y)
+    X_train, x_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
 
+    model = nn.Sequential(
+        LSTM(1662, 64, True),
+        nn.ReLU(),
+        LSTM(64, 128, True),
+        nn.ReLU(),
+        LSTM(128, 64, False),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(64, 64),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(64, 32),
+        nn.ReLU(),
+        nn.Linear(32, actions.shape[0])
+    )
+
+    lossfun = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
+
+    train_data = TensorDataset(X_train, y_train)
+    test_data = TensorDataset(x_test, y_test)
+
+    train_loader = DataLoader(train_data, batch_size = 30, shuffle = True, drop_last = True)
+    test_loader = DataLoader(test_data, batch_size = test_data.tensors[0].shape[0])
+    numepochs = 1
+
+    for epochi in range(numepochs):
+        for X,y in train_loader:
+            yHat = model(X)
+            loss = lossfun(yHat, y)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        
+            predicted_action = torch.argmax(yHat, axis = 1)
+            print(predicted_action)
+    
 
 if __name__ == "__main__":
     Train()
