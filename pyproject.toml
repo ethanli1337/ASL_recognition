@@ -8,6 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "matplotlib>=3.11.2",
+    "mediapipe>=1.2.3",
+    "numpy>=2.5.5",
+    "opencv-python>=5.1.0.95",
+    "python-dotenv>=1.2.4",
+    "scikit-learn>=1.9.1",
     "torch>=2.15.0",
     "torchaudio>=2.11.1",
     "torchvision>=0.29.2",
